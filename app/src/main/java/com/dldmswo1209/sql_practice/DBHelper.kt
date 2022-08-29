@@ -68,7 +68,7 @@ class DBHelper(
         // 리턴 받고자 하는 컬럼 값의 array
         val projection = arrayOf(UID)
 
-        // where "id"=id and "password"=password 구문 적용하는 부분
+        // where "id"=id
         val selection= "$COL_ID = ?"
         val selectionArgs = arrayOf(id)
 
@@ -107,21 +107,28 @@ class DBHelper(
     fun login(user: User) : Boolean{
         val db = this.readableDatabase
 
+        // 리턴 받고자 하는 컬럼 값의 array
         val projection = arrayOf(UID)
 
+        // where "id" = id and "pw" = pw 구문 적용하는 부분
         val selection = "$COL_ID = ? AND $COL_PW = ?"
         val selectionArgs = arrayOf(user.id, user.pw)
 
+        // 정렬조건 지정
         val cursor = db.query(
-            TABLE_NAME,
-            projection,
-            selection,
-            selectionArgs,
-            null,
-            null,
-            null
+            TABLE_NAME, // 테이블 이름
+            projection, // 리턴 받고자 하는 컬럼
+            selection, // 조건
+            selectionArgs, // 조건에 해당하는 값의 배열
+            null, // 그룹 조건
+            null, // having 조건
+            null // orderby 조건
         )
-        return cursor.count > 0
+        if(cursor.moveToFirst()){ // 유저의 primary key(uid) 가져오기
+            Log.d("testt", cursor.getInt(cursor.getColumnIndex(UID)).toString())
+        }
+
+        return cursor.count > 0 // 반환 값이 존재하면 로그인 성공(true)
     }
     // 유저 정보 업데이트 메소드
     fun updateUser(user: User): Int{
