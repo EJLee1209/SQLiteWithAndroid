@@ -5,6 +5,8 @@ import android.content.ContentValues
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
+import android.provider.BaseColumns
+import android.util.Log
 import android.widget.Toast
 
 class DBHelper(
@@ -60,13 +62,35 @@ class DBHelper(
             return users
         }
 
+    fun checkIdExist(id: String): Boolean{
+        val db = this.readableDatabase
+
+        // 리턴 받고자 하는 컬럼 값의 array
+        val projection = arrayOf(UID)
+
+        // where "id"=id and "password"=password 구문 적용하는 부분
+        val selection= "$COL_ID = ?"
+        val selectionArgs = arrayOf(id)
+
+        // 정렬조건 지정
+        val cursor = db.query(
+            TABLE_NAME, // 테이블
+            projection, // 리턴 받고자 하는 컬럼
+            selection, // where 조건
+            selectionArgs, // where 조건에 해당하는 값의 배열
+            null, // 그룹 조건
+            null, // having 조건
+            null // orderby 조건 지정
+        )
+        // 반환된 cursor 값이 존재하면 아이디 중복(true), 존재하지 않으면 아이디 생성가능(false)
+        return cursor.count > 0
+    }
+
     // db 에 새로운 유저를 추가하는 메소드(회원가입)
-    fun addUser(user: User): Boolean{
-        allUsers.forEach {
-            if(user.id == it.id){
-                Toast.makeText(this.context,"아이디 중복입니다. 다른 아이디를 사용해주세요", Toast.LENGTH_SHORT).show()
-                return false
-            }
+    fun addUser(user: User){
+        if(checkIdExist(user.id)) {
+            Toast.makeText(this.context, "이미 존재하는 아이디 입니다.", Toast.LENGTH_SHORT).show()
+            return
         }
         val db = this.writableDatabase
         val values = ContentValues()
@@ -77,14 +101,27 @@ class DBHelper(
         db.insert(TABLE_NAME, null, values)
         db.close()
         Toast.makeText(this.context,"회원가입 성공", Toast.LENGTH_SHORT).show()
-        return true
     }
     // 로그인 메소드
+    @SuppressLint("Range")
     fun login(user: User) : Boolean{
-        allUsers.forEach {
-            if(user.id == it.id && user.pw == it.pw) return true
-        }
-        return false
+        val db = this.readableDatabase
+
+        val projection = arrayOf(UID)
+
+        val selection = "$COL_ID = ? AND $COL_PW = ?"
+        val selectionArgs = arrayOf(user.id, user.pw)
+
+        val cursor = db.query(
+            TABLE_NAME,
+            projection,
+            selection,
+            selectionArgs,
+            null,
+            null,
+            null
+        )
+        return cursor.count > 0
     }
     // 유저 정보 업데이트 메소드
     fun updateUser(user: User): Int{
